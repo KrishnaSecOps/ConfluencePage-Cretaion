@@ -22,7 +22,7 @@ jobs:
         id: template
         run: |
           # Choose your template file
-          TEMPLATE_FILE="./confluence-template.html"
+          TEMPLATE_FILE="./confluence.html"
           # Escape quotes & compress to one line for JSON
           CONTENT=$(sed 's/"/\\"/g' $TEMPLATE_FILE | tr -d '\n')
           echo "content=$CONTENT" >> $GITHUB_OUTPUT
@@ -61,7 +61,7 @@ jobs:
               -d "{
                 \"id\": \"$PAGE_ID\",
                 \"type\": \"page\",
-                \"title\": \"Page Created by GituHub Actionss\",
+                \"title\": \"Page Created by GituHub Actionsss\",
                 \"space\": { \"key\": \"$CONF_SPACE\" },
                 \"version\": { \"number\": $VERSION },
                 \"body\": {
