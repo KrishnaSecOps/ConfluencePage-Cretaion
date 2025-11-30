@@ -24,17 +24,16 @@ jobs:
           INPUT="docs/page.md"
           OUTPUT="content.html"
 
-          # Convert markdown to Confluence-compatible HTML (storage format)
           pandoc "$INPUT" \
-            --from markdown \
-            --to html \
-            --standalone \
-            --wrap=none \
-            -o "$OUTPUT"
+          --from markdown \
+          --to html \
+          --standalone \
+          --wrap=none \
+          -o "$OUTPUT"
 
-          # Escape content for JSON
-          CONTENT=$(sed 's/"/\\"/g' content.html | tr -d '\n')
-          echo "content=$CONTENT" >> $GITHUB_OUTPUT
+        # Encode safely
+        CONTENT=$(base64 -w 0 content.html)
+        echo "content=$CONTENT" >> $GITHUB_OUTPUT
 
       - name: Publish to Confluence
         env:
