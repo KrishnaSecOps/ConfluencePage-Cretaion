@@ -1,0 +1,67 @@
+name: Publish to Confluence
+
+on:
+  push:
+    branches: ["master"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare Confluence Content
+        id: prepare
+        run: |
+          # Convert README.md to HTML (or any file you want to push)
+          sudo apt-get update && sudo apt-get install -y pandoc
+          pandoc README.md -f markdown -t html -o content.html
+
+      - name: Publish to Confluence
+        env:
+          CONF_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }}
+          CONF_TOKEN: ${{ secrets.CONFLUENCE_TOKEN }}
+          CONF_URL: ${{ secrets.CONFLUENCE_URL }}
+          CONF_SPACE: ${{ secrets.CONFLUENCE_SPACE }}
+          PAGE_ID: ${{ secrets.CONFLUENCE_PAGE_ID }}
+        run: |
+          CONTENT=$(sed 's/"/\\"/g' content.html | tr -d '\n')
+
+          if [ -z "$PAGE_ID" ]; then
+            echo "Creating new Confluence page..."
+
+            curl -X POST "$CONF_URL/rest/api/content" \
+              -u "$CONF_EMAIL:$CONF_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"type\": \"page\",
+                \"title\": \"Auto-Generated Page\",
+                \"space\": { \"key\": \"$CONF_SPACE\" },
+                \"body\": {
+                  \"storage\": { \"value\": \"$CONTENT\", \"representation\": \"storage\" }
+                }
+              }"
+          else
+            echo "Updating existing Confluence page: $PAGE_ID"
+
+            # Get current version
+            VERSION=$(curl -s -u "$CONF_EMAIL:$CONF_TOKEN" \
+              "$CONF_URL/rest/api/content/$PAGE_ID?expand=version" | \
+              jq '.version.number + 1')
+
+            curl -X PUT "$CONF_URL/rest/api/content/$PAGE_ID" \
+              -u "$CONF_EMAIL:$CONF_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"id\": \"$PAGE_ID\",
+                \"type\": \"page\",
+                \"title\": \"Auto-Updated Page\",
+                \"space\": { \"key\": \"$CONF_SPACE\" },
+                \"version\": { \"number\": $VERSION },
+                \"body\": {
+                  \"storage\": { \"value\": \"$CONTENT\", \"representation\": \"storage\" }
+                }
+              }"
+          fi
