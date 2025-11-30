@@ -12,12 +12,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare Confluence Content
-        id: prepare
-        run: |
-          # Convert README.md to HTML (or any file you want to push)
-          sudo apt-get update && sudo apt-get install -y pandoc
-          pandoc README.md -f markdown -t html -o content.html
+      # - name: Prepare Confluence Content
+      #   id: prepare
+      #   run: |
+      #     # Convert README.md to HTML (or any file you want to push)
+      #     sudo apt-get update && sudo apt-get install -y pandoc
+      #     pandoc README.md -f markdown -t html -o content.html
       - name: Load Confluence Template
         id: template
         run: |
