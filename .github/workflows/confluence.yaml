@@ -1,8 +1,9 @@
-name: Publish to Confluence
+name: Publish Markdown to Confluence
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
   publish:
@@ -12,55 +13,60 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare Confluence Content
-        id: prepare
+      - name: Install pandoc
         run: |
-          # Convert README.md to HTML (or any file you want to push)
-          sudo apt-get update && sudo apt-get install -y pandoc
-          pandoc README.md -f markdown -t html -o content.html
-      - name: Load Confluence Template
-        id: template
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+
+      - name: Convert Markdown → Confluence HTML
+        id: convert
         run: |
-          # Choose your template file
-          TEMPLATE_FILE="./confluence-template.html"
+          INPUT="docs/page.md"
+          OUTPUT="content.html"
 
-          # Escape quotes & compress to one line for JSON
-          CONTENT=$(sed 's/"/\\"/g' $TEMPLATE_FILE | tr -d '\n')
+          # Convert markdown to Confluence-compatible HTML (storage format)
+          pandoc "$INPUT" \
+            --from markdown \
+            --to html \
+            --standalone \
+            --wrap=none \
+            -o "$OUTPUT"
 
+          # Escape content for JSON
+          CONTENT=$(sed 's/"/\\"/g' content.html | tr -d '\n')
           echo "content=$CONTENT" >> $GITHUB_OUTPUT
-          
 
       - name: Publish to Confluence
         env:
           CONF_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }}
           CONF_TOKEN: ${{ secrets.CONFLUENCE_TOKEN }}
-          CONF_URL: ${{ secrets.CONFLUENCE_URL }}
+          CONF_URL:   ${{ secrets.CONFLUENCE_URL }}
           CONF_SPACE: ${{ secrets.CONFLUENCE_SPACE }}
-          PAGE_ID: ${{ secrets.CONFLUENCE_PAGE_ID }}
+          PAGE_ID:    ${{ secrets.CONFLUENCE_PAGE_ID }}
         run: |
-          CONTENT=$(sed 's/"/\\"/g' content.html | tr -d '\n')
+          CONTENT="${{ steps.convert.outputs.content }}"
 
           if [ -z "$PAGE_ID" ]; then
-            echo "Creating new Confluence page..."
-
+            echo "Creating new page..."
             curl -X POST "$CONF_URL/rest/api/content" \
               -u "$CONF_EMAIL:$CONF_TOKEN" \
               -H "Content-Type: application/json" \
               -d "{
                 \"type\": \"page\",
-                \"title\": \"Auto-Generated Page\",
+                \"title\": \"Markdown Converted Page\",
                 \"space\": { \"key\": \"$CONF_SPACE\" },
                 \"body\": {
-                  \"storage\": { \"value\": \"$CONTENT\", \"representation\": \"storage\" }
+                  \"storage\": {
+                    \"value\": \"$CONTENT\",
+                    \"representation\": \"storage\"
+                  }
                 }
               }"
           else
-            echo "Updating existing Confluence page: $PAGE_ID"
+            echo "Updating existing page..."
 
-            # Get current version
             VERSION=$(curl -s -u "$CONF_EMAIL:$CONF_TOKEN" \
-              "$CONF_URL/rest/api/content/$PAGE_ID?expand=version" | \
-              jq '.version.number + 1')
+              "$CONF_URL/rest/api/content/$PAGE_ID?expand=version" | jq '.version.number + 1')
 
             curl -X PUT "$CONF_URL/rest/api/content/$PAGE_ID" \
               -u "$CONF_EMAIL:$CONF_TOKEN" \
@@ -68,11 +74,14 @@ jobs:
               -d "{
                 \"id\": \"$PAGE_ID\",
                 \"type\": \"page\",
-                \"title\": \"Page Created by GituHub ACtion\",
+                \"title\": \"Markdown Converted Page\",
                 \"space\": { \"key\": \"$CONF_SPACE\" },
                 \"version\": { \"number\": $VERSION },
                 \"body\": {
-                  \"storage\": { \"value\": \"$CONTENT\", \"representation\": \"storage\" }
+                  \"storage\": {
+                    \"value\": \"$CONTENT\",
+                    \"representation\": \"storage\"
+                  }
                 }
               }"
           fi
