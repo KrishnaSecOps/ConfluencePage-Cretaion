@@ -11,5 +11,4 @@ This document is auto-generated from Markdown and published to Confluence.
 
 ## Example Code
 
-```bash
-ansible-playbook deploy.yml --check
+```bashs
