@@ -18,6 +18,17 @@ jobs:
           # Convert README.md to HTML (or any file you want to push)
           sudo apt-get update && sudo apt-get install -y pandoc
           pandoc README.md -f markdown -t html -o content.html
+      - name: Load Confluence Template
+        id: template
+        run: |
+          # Choose your template file
+          TEMPLATE_FILE="template/confluence-template.html"
+
+          # Escape quotes & compress to one line for JSON
+          CONTENT=$(sed 's/"/\\"/g' $TEMPLATE_FILE | tr -d '\n')
+
+          echo "content=$CONTENT" >> $GITHUB_OUTPUT
+          
 
       - name: Publish to Confluence
         env:
@@ -57,7 +68,7 @@ jobs:
               -d "{
                 \"id\": \"$PAGE_ID\",
                 \"type\": \"page\",
-                \"title\": \"Auto-Updated Page\",
+                \"title\": \"Page Created by GituHub ACtion\",
                 \"space\": { \"key\": \"$CONF_SPACE\" },
                 \"version\": { \"number\": $VERSION },
                 \"body\": {
