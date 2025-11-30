@@ -61,7 +61,7 @@ jobs:
               -d "{
                 \"id\": \"$PAGE_ID\",
                 \"type\": \"page\",
-                \"title\": \"Page Created by GituHub ACtion\",
+                \"title\": \"Page Created by GituHub Actionss\",
                 \"space\": { \"key\": \"$CONF_SPACE\" },
                 \"version\": { \"number\": $VERSION },
                 \"body\": {
