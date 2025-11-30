@@ -30,10 +30,8 @@ jobs:
           --standalone \
           --wrap=none \
           -o "$OUTPUT"
-
-        # Encode safely
-        CONTENT=$(base64 -w 0 content.html)
-        echo "content=$CONTENT" >> $GITHUB_OUTPUT
+          CONTENT=$(base64 -w 0 content.html)
+          echo "content=$CONTENT" >> $GITHUB_OUTPUT
 
       - name: Publish to Confluence
         env:
